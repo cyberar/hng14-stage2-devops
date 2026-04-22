@@ -1,0 +1,92 @@
+# version: '3.8'
+
+networks:
+  app_network:
+    driver: bridge
+
+services:
+  redis:
+    image: ${REDIS_IMAGE}
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: ${REDIS_CPU_LIMIT}
+          memory: ${REDIS_MEM_LIMIT}
+        reservations:
+          cpus: ${REDIS_CPU_RESERVE}
+          memory: ${REDIS_MEM_RESERVE}
+
+  api:
+    build:
+      context: ${API_BUILD_CONTEXT}
+    environment:
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_USERNAME=${REDIS_USERNAME}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "${API_HOST_PORT}:${API_CONTAINER_PORT}"
+    depends_on:
+      redis: 
+        condition: service_healthy
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: ${API_CPU_LIMIT}
+          memory: ${API_MEM_LIMIT}
+        reservations:
+          cpus: ${API_CPU_RESERVE}
+          memory: ${API_MEM_RESERVE}
+
+  worker:
+    build:
+      context: ${WORKER_BUILD_CONTEXT}
+    environment:
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_USERNAME=${REDIS_USERNAME}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      redis: 
+        condition: service_healthy
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: ${WORKER_CPU_LIMIT}
+          memory: ${WORKER_MEM_LIMIT}
+        reservations:
+          cpus: ${WORKER_CPU_RESERVE}
+          memory: ${WORKER_MEM_RESERVE}
+
+  frontend:
+    build:
+      context: ${FRONTEND_BUILD_CONTEXT}
+    ports:
+      - "${FRONTEND_HOST_PORT}:${FRONTEND_CONTAINER_PORT}"
+    depends_on:
+      api: 
+        condition: service_healthy
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: ${FRONTEND_CPU_LIMIT}
+          memory: ${FRONTEND_MEM_LIMIT}
+        reservations:
+          cpus: ${FRONTEND_CPU_RESERVE}
+          memory: ${FRONTEND_MEM_RESERVE}
+
+

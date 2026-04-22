@@ -13,27 +13,60 @@
 </head>
 <body>
   <h1>Job Processor Dashboard</h1>
-  <button onclick="submitJob()">Submit New Job</button>
+  <button id="submitBtn" onclick="submitJob()">Submit New Job</button>  <!-- Added id -->
   <div id="result"></div>
   <div id="jobs"></div>
 
   <script>
-    const jobIds = [];
+    const jobIds = [];  
 
     async function submitJob() {
-      const res = await fetch('/submit', { method: 'POST' });
-      const data = await res.json();
-      document.getElementById('result').innerText = `Submitted: ${data.job_id}`;
-      jobIds.push(data.job_id);
-      pollJob(data.job_id);
+      const btn = document.getElementById('submitBtn');  // Added get button by id for better UX control
+      const resultEl = document.getElementById('result');  // Added to prevent multiple DOM queries
+      
+      // This is to prevent double clicks
+      btn.disabled = true;
+      btn.innerText = 'Submitting...';
+      resultEl.innerText = '';
+
+      // Add a try-catch block to handle network errors
+      try {
+        const res = await fetch('/jobs', { method: 'POST' });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);  // Check for HTTP errors
+        
+        const data = await res.json();
+        resultEl.innerText = `Submitted: ${data.job_id}`;
+        
+        jobIds.push(data.job_id);
+        pollJob(data.job_id);
+      } catch (error) {
+        resultEl.innerText = `Failed to submit job: ${error.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Submit New Job';
+      }
     }
 
-    async function pollJob(id) {
-      const res = await fetch(`/status/${id}`);
-      const data = await res.json();
-      renderJob(id, data.status);
-      if (data.status !== 'completed') {
-        setTimeout(() => pollJob(id), 2000);
+    async function pollJob(id, attempts = 0) {
+      const MAX_ATTEMPTS = 60; // 2 min at 2s intervals
+      if (attempts >= MAX_ATTEMPTS) {
+        renderJob(id, 'Timed out');
+        return;
+      }
+      // add try-catch to handle potential errors during polling
+      try {
+        const res = await fetch(`/jobs/${id}`);
+        if (!res.ok) throw new Error(`Status check failed for job ${id}`);
+        
+        const data = await res.json();
+        renderJob(id, data.status);
+
+        if (data.status !== 'completed') {
+          setTimeout(() => pollJob(id, attempts + 1), 2000);  // Only poll if not completed, and increment attempts to retry
+        }
+      } catch (error) {
+        console.error(`Error occurred while polling job ${id}:`, error);
+        renderJob(id, 'Error fetching status');
       }
     }
 
@@ -44,6 +77,9 @@
         el.className = 'job';
         el.id = id;
         document.getElementById('jobs').appendChild(el);
+      }
+      if (status === 'failed' || status.includes('error')) {
+        el.classList.add('job-error');
       }
       el.innerText = `Job ${id.substring(0, 8)}... — ${status}`;
     }

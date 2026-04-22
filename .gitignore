@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+hng-api-venv/
+hng-worker-venv/
+node_modules/
+dist/
+.env*
+frontend/views/sample.html
