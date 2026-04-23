@@ -5,7 +5,7 @@ hng-api-venv/
 hng-worker-venv/
 node_modules/
 dist/
-.env*
+.env
 frontend/views/sample.html
 .coverage*
 .pytest_cache/

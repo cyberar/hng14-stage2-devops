@@ -190,6 +190,13 @@ jobs:
           docker tag localhost:5000/worker:latest worker:latest
           docker tag localhost:5000/frontend:latest frontend:latest
 
+      - name: Create .env for Integration Testing
+        run: |
+          cp .env.example .env
+          sed -i "s/changeme/${REDIS_PASSWORD}/g" .env  # Replace placeholder with actual password from secrets
+        env:
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+
       - name: Create Compose Override for Integration
         run: |
           # Create an override to prevent compose from trying to build
