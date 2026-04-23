@@ -1,6 +1,14 @@
 import sys
+import os
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
+
+
+os.environ["REDIS_HOST"] = "localhost"
+os.environ["REDIS_PORT"] = "6379"
+os.environ["REDIS_USERNAME"] = "default"
+os.environ["REDIS_PASSWORD"] = "mockpassword"
+
 
 # Mock the entire redis module before importing the app, so that when main.py imports redis, it gets our mock instead of the real module
 mock_redis_module = MagicMock()
@@ -11,7 +19,7 @@ mock_redis_instance = MagicMock()
 mock_redis_module.Redis.return_value = mock_redis_instance
 
 
-from main import app 
+from main import app # noqa: E402
 
 
 # Create a test client for the FastAPI app
