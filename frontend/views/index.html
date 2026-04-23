@@ -24,7 +24,7 @@
       const btn = document.getElementById('submitBtn');  // Added get button by id for better UX control
       const resultEl = document.getElementById('result');  // Added to prevent multiple DOM queries
       
-      // This is to prevent double clicks
+      // This is to prevent double clicks while the job is being submitted
       btn.disabled = true;
       btn.innerText = 'Submitting...';
       resultEl.innerText = '';
