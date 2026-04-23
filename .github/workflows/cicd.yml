@@ -269,11 +269,14 @@ jobs:
           OLD_CONTAINER="api_old"
           NEW_CONTAINER="api_new"
           
+          # Pass dummy environment variables so Pydantic doesn't crash the container on startup
+          ENV_VARS="-e REDIS_HOST=localhost -e REDIS_PORT=6379 -e REDIS_USERNAME=default -e REDIS_PASSWORD=deploy_pass"
+          
           # Ensure old container exists for the first run mockup
-          docker run -d --name $OLD_CONTAINER --network host $IMAGE || true
+          docker run -d --name $OLD_CONTAINER --network host $ENV_VARS $IMAGE || true
           
           echo "Starting new container..."
-          docker run -d --name $NEW_CONTAINER --network host $IMAGE
+          docker run -d --name $NEW_CONTAINER --network host $ENV_VARS $IMAGE
           
           echo "Monitoring health check (Timeout: 60s)..."
           STATUS="unhealthy"
