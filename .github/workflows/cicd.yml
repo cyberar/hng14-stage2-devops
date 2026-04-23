@@ -150,8 +150,7 @@ jobs:
         run: docker load -i images.tar
 
       - name: Install Trivy
-        run: |
-          wget -qO - https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.50.1
+        uses: aquasecurity/setup-trivy@master
 
       - name: Scan Images (Fail on CRITICAL)
         run: |
