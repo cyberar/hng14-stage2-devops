@@ -268,28 +268,32 @@ jobs:
           IMAGE="localhost:5000/api:latest"
           OLD_CONTAINER="api_old"
           NEW_CONTAINER="api_new"
+          OLD_PORT=8000
+          NEW_PORT=8001
           
           ENV_VARS="-e REDIS_HOST=localhost -e REDIS_PORT=6379 -e REDIS_USERNAME=default -e REDIS_PASSWORD=deploy_pass"
           
+          # Ensure old container is running on port 8000
           docker run -d --name $OLD_CONTAINER --network host $ENV_VARS $IMAGE || true
+          sleep 3
           
-          echo "Starting new container..."
-          docker run -d --name $NEW_CONTAINER --network host $ENV_VARS $IMAGE
+          echo "Starting new container on port $NEW_PORT..."
+          # Override the CMD to bind to a different port so it doesn't conflict
+          docker run -d --name $NEW_CONTAINER --network host $ENV_VARS $IMAGE uvicorn main:app --host 0.0.0.0 --port $NEW_PORT
           
-          echo "Monitoring health check (Timeout: 60s)..."
+          echo "Monitoring health check on port $NEW_PORT (Timeout: 60s)..."
           STATUS="unhealthy"
           SECONDS_WAITED=0
           
           while [ $SECONDS_WAITED -lt 60 ]; do
-            CURRENT_STATUS=$(docker inspect --format='{{.State.Health.Status}}' $NEW_CONTAINER 2>/dev/null || echo "starting")
-            
-            if [ "$CURRENT_STATUS" == "healthy" ]; then
+            # Use curl to directly check the new container's health endpoint
+            if curl -s -f http://localhost:$NEW_PORT/health > /dev/null 2>&1; then
               STATUS="healthy"
               echo "New container is healthy!"
               break
             fi
             
-            echo "Status: $CURRENT_STATUS. Waiting... ($SECONDS_WAITED s)"
+            echo "Waiting... ($SECONDS_WAITED s)"
             sleep 5
             ((SECONDS_WAITED+=5))
           done
@@ -297,7 +301,7 @@ jobs:
           if [ "$STATUS" != "healthy" ]; then
             echo "ABORT: Health check failed after 60 seconds."
             echo "========================================="
-            echo "PRINTING CONTAINER LOGS TO FIND THE ERROR:"
+            echo "PRINTING CONTAINER LOGS:"
             echo "========================================="
             docker logs $NEW_CONTAINER
             echo "========================================="
@@ -308,8 +312,8 @@ jobs:
           fi
           
           echo "Rolling update successful. Swapping containers..."
+          echo "Stopping old container..."
           docker stop $OLD_CONTAINER || true
           docker rm $OLD_CONTAINER || true
-          docker rename $NEW_CONTAINER $OLD_CONTAINER
           
-          echo "Deployment complete."
+          echo "Deployment complete. New container is live."
