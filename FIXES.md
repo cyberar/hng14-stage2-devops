@@ -1,9 +1,3 @@
-
----
-
-### 2. `FIXES.md`
-
-```markdown
 # Bug Fixes
 
 This document details every bug encountered during the development, containerization, and CI/CD pipeline creation of this project.
