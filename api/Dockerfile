@@ -43,7 +43,7 @@ RUN chown -R fastapiuser:fastapiuser /app \
 USER fastapiuser
 
 # HEALTHCHECK: Verify the API is responsive
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # Expose the application port
