@@ -150,7 +150,7 @@ jobs:
         run: docker load -i images.tar
 
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@master
+        uses: aquasecurity/setup-trivy@main
 
       - name: Scan Images (Fail on CRITICAL)
         run: |
