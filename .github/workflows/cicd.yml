@@ -154,18 +154,18 @@ jobs:
 
       - name: Scan Images (Fail on CRITICAL)
         run: |
-          # Trivy scans multiple images. Fails (exit 1) if CRITICAL is found.
-          trivy image --exit-code 1 --severity CRITICAL --format sarif -o trivy-results.sarif \
-          localhost:5000/api:latest \
-          localhost:5000/worker:latest \
-          localhost:5000/frontend:latest
+          # Scan each image individually to avoid multi-target file errors
+          trivy image --exit-code 1 --severity CRITICAL --format sarif -o api-trivy.sarif localhost:5000/api:latest
+          trivy image --exit-code 1 --severity CRITICAL --format sarif -o worker-trivy.sarif localhost:5000/worker:latest
+          trivy image --exit-code 1 --severity CRITICAL --format sarif -o frontend-trivy.sarif localhost:5000/frontend:latest
 
       - name: Upload Trivy SARIF Artifact
         uses: actions/upload-artifact@v4
-        if: always() # Upload even if pipeline fails to view in Actions UI
+        if: always() 
         with:
           name: trivy-sarif
-          path: trivy-results.sarif
+          # Upload all three SARIF files
+          path: "*.sarif"
 
   # stage 5: Integration Test: Deploy the full stack using docker-compose, run end-to-end tests against the live environment, and tear down the stack.
   integration_test:
